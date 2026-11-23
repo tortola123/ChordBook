@@ -63,7 +63,7 @@ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .gap.join{flex:0 0 18px;height:6px;background:var(--ink)}
 .foot{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:6px 26px 12px;background:#fff;box-shadow:-10px -2px 10px rgba(0,0,0,.25);color:var(--navy);font-weight:700;font-size:clamp(1.1rem,2vw,1.55rem)}
 .meta{display:flex;gap:.8rem;align-items:center}.meta b.g{color:var(--green)}.meta b.t{color:var(--slate)}
-.k{font:700 1rem var(--gothic);color:#fff;border-radius:99px;min-width:28px;height:28px;display:grid;place-items:center;padding:0 .4rem}
+.k{font:700 1rem/1 var(--gothic);color:#fff;border-radius:99px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0 .4rem}
 .meta em{font-style:normal;font-size:.85rem;background:var(--pink);color:#fff;border-radius:8px;padding:0 .5rem}
 .empty,.msg{font-weight:700;text-align:center}.msg{color:var(--red)}
 .empty{grid-column:1/-1;padding:2rem;border:3px dashed var(--navy);border-radius:23px;color:var(--navy)}
@@ -80,12 +80,12 @@ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .conn{position:relative;display:flex;align-items:center;justify-content:space-evenly;flex:none;width:calc(var(--b)*26px);height:10px}
 .conn::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px solid var(--navy)}
 .conn i{position:relative;width:8px;height:8px;border-radius:50%;background:var(--navy)}
-.dock{display:grid;grid-template-columns:minmax(300px,390px) 1fr;gap:24px;align-items:end}
+.dock{display:grid;grid-template-columns:minmax(300px,520px) 1fr;gap:24px;align-items:end}
 .panel{border:9px solid var(--navy);border-radius:30px;background:#fff;padding:12px 11px}
 .panel h4{margin:6px 0 2px;padding:6px 10px 0;font-size:.8rem;color:var(--navy);border-top:1px solid var(--navy)}
 .panel h4:first-child{border:0;padding-top:0}
-.roots{display:flex;flex-wrap:wrap;gap:10px;padding:8px 10px}
-.root{width:56px;height:56px;border-radius:50%;border:0;color:#fff;font:700 2.3rem var(--gothic);cursor:pointer;display:grid;place-items:center}
+.roots{display:flex;flex-wrap:wrap;gap:8px;padding:8px 10px}
+.root{width:56px;height:56px;flex:none;padding:0;border-radius:50%;border:0;color:#fff;font:700 2.3rem/1 var(--gothic);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .mods{display:flex;flex-wrap:wrap;gap:6px 12px;padding:8px 10px;align-items:center}
 .mods button{background:none;border:0;color:var(--navy);font:700 1.7rem var(--gothic);min-width:24px;cursor:pointer}
 .mods hr{width:0;height:30px;border:0;border-left:1px solid var(--navy);margin:0}
@@ -100,6 +100,8 @@ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .selrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .chip[draggable=true],.root,.mods button{cursor:grab}
 .chip.over{outline:3px dashed var(--red);outline-offset:2px}.band.over{outline:3px dashed var(--red);outline-offset:-3px}.conn.over{outline:2px dashed var(--red);outline-offset:4px}.panel.over{outline:4px dashed var(--red);outline-offset:2px}
+.root,.pill>span,.pill small,.mods button,.k{text-box:trim-both cap alphabetic}
+@supports not (text-box:trim-both cap alphabetic){.root,.pill>span{padding-top:.1em}}
 /* view dialog */
 .modal{border:9px solid var(--navy);border-radius:30px;width:min(760px,92vw);padding:1.2rem}
 .modal::backdrop{background:rgba(45,50,146,.35)}
@@ -163,7 +165,7 @@ const plural = (n) => `${n} ${n === 1 ? 'Song' : 'Songs'}`;
 const empty = (t) => h('div', { className: 'empty', textContent: t });
 const pill = (sym) => {
   const i = sym.indexOf('/'), mid = i < 0 ? sym.slice(1) : sym.slice(1, i), bass = i < 0 ? '' : sym.slice(i);
-  return h('span', { className: 'pill', style: `background:${ROOT[sym[0]] || '#2d3292'}` }, sym[0], mid && h('small', { textContent: mid }), bass && h('span', { textContent: bass }));
+  return h('span', { className: 'pill', style: `background:${ROOT[sym[0]] || '#2d3292'}` }, h('span', { textContent: sym[0] }), mid && h('small', { textContent: mid }), bass && h('span', { textContent: bass }));
 };
 const rowOf = (chords, showBeats) => h('div', { className: 'row' }, ...chords.flatMap((c, i) => showBeats
   ? [pill(c.symbol), h('span', { className: 'conn', style: '--b:' + c.beats, title: c.beats + (c.beats === 1 ? ' beat' : ' beats') }, ...Array.from({ length: c.beats }, () => h('i')))]
