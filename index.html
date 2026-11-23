@@ -98,6 +98,8 @@ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .name{all:unset;box-sizing:border-box;width:100%;background:var(--red);color:#fff;font:700 1.3rem var(--sans);border-radius:22px;padding:.5rem .9rem}
 .name::placeholder{color:#fff;opacity:1}
 .selrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.chip[draggable=true],.root,.mods button{cursor:grab}
+.chip.over{outline:3px dashed var(--red);outline-offset:2px}.band.over{background:#fff3f2}.conn.over{outline:2px dashed var(--red);outline-offset:4px}.panel.over{outline:4px dashed var(--red);outline-offset:2px}
 /* view dialog */
 .modal{border:9px solid var(--navy);border-radius:30px;width:min(760px,92vw);padding:1.2rem}
 .modal::backdrop{background:rgba(45,50,146,.35)}
@@ -276,12 +278,45 @@ async function editor(id) {
     beats = +e.target.value; readout.textContent = beats + (beats === 1 ? ' beat' : ' beats');
     if (sel) { lines[sel.l][sel.i].beats = beats; draw(); } } });
   readout.textContent = beats + ' beats';
-  const conn = (b) => h('span', { className: 'conn', style: '--b:' + b }, ...Array.from({ length: b }, () => h('i')));
+  const conn = (b, l, i) => h('span', { className: 'conn', style: '--b:' + b, ...over(() => drop(l, i + 1, i)) }, ...Array.from({ length: b }, () => h('i')));
+  // ---- drag and drop (clicking still works as a fallback) ----
+  let drag = null;
+  const startDrag = (p) => (e) => { drag = p; e.dataTransfer.setData('text/plain', JSON.stringify(p)); e.dataTransfer.effectAllowed = 'copyMove'; };
+  const over = (fn, ok = () => true) => ({
+    ondragover: (e) => { if (!ok()) return; e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('over'); },
+    ondragleave: (e) => e.currentTarget.classList.remove('over'),
+    ondrop: (e) => { if (!ok()) return; e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('over'); fn(e); }
+  });
+  // l = line, at = index to insert at (undefined = end of line), target = chord a modifier lands on
+  function drop(l, at, target) {
+    const d = drag; drag = null; if (!d) return;
+    const line = lines[l];
+    if (d.t === 'root') { const k = at ?? line.length; line.splice(k, 0, { symbol: d.v, beats }); sel = { l, i: k }; }
+    else if (d.t === 'mod') {
+      const k = target ?? line.length - 1, c = line[k];
+      if (c && c.symbol.length < 20) { c.symbol += d.v; sel = { l, i: k }; }
+    } else if (d.t === 'chord') {
+      const [c] = lines[d.l].splice(d.i, 1);
+      let k = at ?? line.length;
+      if (d.l === l && at !== undefined && d.i < at) k--;
+      line.splice(k, 0, c); sel = { l, i: k };
+      if (!lines[d.l].length && lines.length > 1) { lines.splice(d.l, 1); if (d.l < l) sel.l--; }
+    }
+    draw();
+  }
+  function dropOut() { // dragging a chord back onto the palette deletes it
+    const d = drag; drag = null; if (!d || d.t !== 'chord') return;
+    lines[d.l].splice(d.i, 1);
+    if (!lines[d.l].length && lines.length > 1) lines.splice(d.l, 1);
+    sel = null; draw();
+  }
   function draw() {
-    canvas.replaceChildren(...lines.map((ch, l) => h('div', { className: 'band' }, ...ch.flatMap((c, i) => [
-      h('button', { type: 'button', className: 'chip', 'aria-label': 'Chord ' + c.symbol, 'aria-pressed': String(sel?.l === l && sel?.i === i),
-        onclick: () => { sel = { l, i }; beats = c.beats; slider.value = beats; readout.textContent = beats + ' beats'; draw(); } }, pill(c.symbol)),
-      conn(c.beats)]), ch.length === 0 && h('span', { className: 'hint', textContent: 'Pick a chord below to start' }))));
+    canvas.replaceChildren(...lines.map((ch, l) => h('div', { className: 'band', ...over(() => drop(l)) }, ...ch.flatMap((c, i) => [
+      h('button', { type: 'button', className: 'chip', draggable: true, 'aria-label': 'Chord ' + c.symbol, 'aria-pressed': String(sel?.l === l && sel?.i === i),
+        onclick: () => { sel = { l, i }; beats = c.beats; slider.value = beats; readout.textContent = beats + ' beats'; draw(); },
+        ondragstart: startDrag({ t: 'chord', l, i }), ondragend: () => (drag = null),
+        ...over((e) => { const r = e.currentTarget.getBoundingClientRect(); drop(l, e.clientX > r.left + r.width / 2 ? i + 1 : i, i); }) }, pill(c.symbol)),
+      conn(c.beats, l, i)]), ch.length === 0 && h('span', { className: 'hint', textContent: 'Drag a chord here, or click one below' }))));
   }
   const add = (r) => { const l = lines.length - 1; lines[l].push({ symbol: r, beats }); sel = { l, i: lines[l].length - 1 }; draw(); };
   const mod = (t) => { const c = sel && lines[sel.l][sel.i]; if (c && c.symbol.length < 20) { c.symbol += t; draw(); } };
@@ -297,11 +332,11 @@ async function editor(id) {
       location.hash = '#/my-songs';
     } catch (ex) { err.textContent = ex.message; }
   }
-  const palette = h('div', { className: 'panel' },
-    h('h4', { textContent: 'Chords' }), h('div', { className: 'roots' }, ...Object.keys(ROOT).map((r) => h('button', { type: 'button', className: 'root', style: `background:${ROOT[r]}`, textContent: r, 'aria-label': 'Add ' + r, onclick: () => add(r) }))),
-    h('h4', { textContent: 'Modifiers (applied to the selected chord)' }), h('div', { className: 'mods' }, ...MODS.map((t) => t === '|' ? h('hr') : h('button', { type: 'button', textContent: t, onclick: () => mod(t) }))),
+  const palette = h('div', { className: 'panel', ...over(dropOut, () => drag?.t === 'chord') },
+    h('h4', { textContent: 'Chords (drag onto the progression, or click)' }), h('div', { className: 'roots' }, ...Object.keys(ROOT).map((r) => h('button', { type: 'button', className: 'root', style: `background:${ROOT[r]}`, textContent: r, 'aria-label': 'Add ' + r, onclick: () => add(r), draggable: true, ondragstart: startDrag({ t: 'root', v: r }), ondragend: () => (drag = null) }))),
+    h('h4', { textContent: 'Modifiers (drag onto a chord, or click to use the selected one)' }), h('div', { className: 'mods' }, ...MODS.map((t) => t === '|' ? h('hr') : h('button', { type: 'button', textContent: t, onclick: () => mod(t), draggable: true, ondragstart: startDrag({ t: 'mod', v: t }), ondragend: () => (drag = null) }))),
     h('h4', {}, 'Spacing: ', readout), slider,
-    h('div', { className: 'small' }, h('button', { type: 'button', className: 'tool', textContent: 'Delete chord', onclick: del }),
+    h('div', { className: 'small' }, h('button', { type: 'button', className: 'tool', textContent: 'Delete chord', title: 'You can also drag a chord back onto this panel', onclick: del }),
       h('button', { type: 'button', className: 'tool', textContent: '+ New line', onclick: () => { lines.push([]); sel = null; draw(); } })));
   const side = h('div', { className: 'side' },
     h('div', { className: 'saves' }, h('button', { className: 'btn pink', textContent: 'Save as Draft', onclick: () => save('draft') }), h('button', { className: 'btn', textContent: 'Save', onclick: () => save('published') })),
