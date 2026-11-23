@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChordBook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inria+Sans:wght@400;700&family=Inria+Serif:wght@700&family=Outfit:wght@700&display=swap">
+<style>
+:root{--navy:#2d3292;--amber:#eaa423;--slate:#525d9b;--green:#649a6a;--pink:#c769a6;--red:#ec3d38;--ink:#1e1e1e;
+--serif:'Inria Serif',Georgia,serif;--sans:'Inria Sans',system-ui,sans-serif;
+--gothic:'ITC Avant Garde Gothic Pro','Century Gothic','Outfit',sans-serif;
+--dots:radial-gradient(#cfd3e8 1px,transparent 1.3px) 0 0/15px 15px}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:400 1.1rem/1.35 var(--sans)}
+body.dots{background:#fff var(--dots)}
+#app{max-width:1440px;margin:0 auto;padding:28px}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+/* header */
+.top{display:flex;justify-content:space-between;align-items:center;padding:10px}
+.top nav{display:flex;gap:1.1rem;font-weight:700;font-size:1.3rem}
+.top a{color:var(--navy);text-decoration:none}.top a[aria-current]{color:var(--amber)}
+.logo svg{width:27px;height:27px;fill:var(--navy);display:block}
+.rule{position:relative;border-top:1.5px solid var(--navy);margin:8px 0}
+.rule::before,.rule::after{content:"";position:absolute;top:-4px;left:0;width:5px;height:5px;border-radius:50%;background:var(--navy)}
+.rule::after{left:auto;right:0}
+/* hero + page heads */
+.hero{text-align:center;padding:1.2rem 0 1.6rem}
+h1{font:700 clamp(2.8rem,9vw,6.4rem)/1.05 var(--serif);color:var(--navy);margin:0}
+h1 span{color:var(--amber)}
+.hero p{font-size:1.5rem;max-width:30ch;margin:.4rem auto 1rem}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{font:700 1.5rem var(--sans);color:#fff;background:var(--navy);border:0;border-radius:12px;padding:.2rem 1.6rem;min-width:150px;text-decoration:none;cursor:pointer;text-align:center}
+.btn.amber{background:var(--amber)}.btn.pink{background:var(--pink)}
+.btn[aria-pressed=true]{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--ink)}
+.head{padding:.8rem 10px}.head h1{font-size:clamp(2.4rem,6vw,5.6rem)}.head p{margin:.2rem 0 .5rem}
+.count{display:inline-block;background:var(--pink);color:#fff;font-weight:700;border-radius:12px;padding:.1rem 1.1rem}
+/* search, filters */
+.tools,.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 10px}
+.search{display:flex;align-items:center;gap:.5rem;background:var(--red);color:#fff;border-radius:99px;padding:.3rem .9rem;width:280px;font-weight:700}
+.search input{all:unset;flex:1;min-width:0;color:#fff}.search input::placeholder{color:#fff;opacity:1}
+.search svg{width:18px;height:18px;flex:none}
+.sels{display:flex;gap:10px;flex-wrap:wrap}
+.pillsel{appearance:none;border:0;border-radius:99px;color:#fff;font:700 1rem var(--sans);padding:.5rem 1.2rem .5rem 2.4rem;cursor:pointer;
+background-color:var(--c);background-repeat:no-repeat;background-position:1rem center;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10'%3E%3Cpath d='M0 0h16L8 10z' fill='white'/%3E%3C/svg%3E")}
+.pillsel option{color:var(--ink);background:#fff}
+.amber{--c:var(--amber)}.slate{--c:var(--slate)}.green{--c:var(--green)}
+.legend{display:flex;gap:.9rem;flex-wrap:wrap;font-size:.95rem;font-weight:700;margin:.6rem 10px 0}
+.plus{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font:700 2rem/1 var(--sans);display:grid;place-items:center;text-decoration:none}
+.link{margin-left:auto;background:none;border:0;color:var(--navy);font:700 1rem var(--sans);text-decoration:underline;cursor:pointer}
+/* song cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,500px),1fr));gap:48px;padding:30px 0}
+.card{border:5.7px solid var(--navy);border-radius:23px;overflow:hidden;background:#fff var(--dots);display:flex;flex-direction:column;gap:.6rem}
+.ct{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:14px 26px 0}
+.ct h3{margin:0;font:700 clamp(1.3rem,2.2vw,1.7rem) var(--sans);color:var(--navy)}
+.view{background:var(--navy);color:#fff;border:0;border-radius:34px;font:700 1.4rem var(--sans);padding:.3rem .8rem;cursor:pointer}
+.row{display:flex;align-items:center;padding:0 26px 14px;overflow:hidden}
+.card .pill{font-size:clamp(1.7rem,3.2vw,3.1rem)}
+.pill{display:inline-flex;align-items:flex-end;justify-content:center;flex:none;color:#fff;font:700 3.2rem/1 var(--gothic);padding:.22em .3em .16em;border-radius:99px;min-width:1.9em}
+.pill small{font-size:.78em}
+.gap{flex:var(--b) 1 6px;min-width:6px}
+.gap.join{flex:0 0 18px;height:6px;background:var(--ink)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:6px 26px 12px;background:#fff;box-shadow:-10px -2px 10px rgba(0,0,0,.25);color:var(--navy);font-weight:700;font-size:clamp(1.1rem,2vw,1.55rem)}
+.meta{display:flex;gap:.8rem;align-items:center}.meta b.g{color:var(--green)}.meta b.t{color:var(--slate)}
+.k{font:700 1rem var(--gothic);color:#fff;border-radius:99px;min-width:28px;height:28px;display:grid;place-items:center;padding:0 .4rem}
+.meta em{font-style:normal;font-size:.85rem;background:var(--pink);color:#fff;border-radius:8px;padding:0 .5rem}
+.empty,.msg{font-weight:700;text-align:center}.msg{color:var(--red)}
+.empty{grid-column:1/-1;padding:2rem;border:3px dashed var(--navy);border-radius:23px;color:var(--navy)}
+/* account */
+.auth{display:grid;gap:.7rem;max-width:420px;margin:1.6rem auto}
+.auth input{border:3px solid var(--navy);border-radius:16px;padding:.6rem 1rem;font:inherit;width:100%}
+/* builder */
+.canvas{display:grid;gap:26px;justify-items:center;min-height:300px;padding:40px 0}
+.band{display:flex;align-items:center;flex-wrap:wrap;min-width:60%;max-width:100%;border:1px solid var(--red);border-radius:38px;padding:22px 30px;background:#fff}
+.band .hint{color:var(--slate);font-weight:700;margin:0 auto}
+.chip{background:none;border:0;padding:4px;border-radius:99px;cursor:pointer;display:inline-flex}
+.chip[aria-pressed=true]{outline:3px solid var(--navy);outline-offset:2px}
+.chip .pill{font-size:3.2rem}
+.conn{position:relative;display:flex;align-items:center;justify-content:space-evenly;flex:none;width:calc(var(--b)*26px);height:10px}
+.conn::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px solid var(--navy)}
+.conn i{position:relative;width:8px;height:8px;border-radius:50%;background:var(--navy)}
+.dock{display:grid;grid-template-columns:minmax(300px,390px) 1fr;gap:24px;align-items:end}
+.panel{border:9px solid var(--navy);border-radius:30px;background:#fff;padding:12px 11px}
+.panel h4{margin:6px 0 2px;padding:6px 10px 0;font-size:.8rem;color:var(--navy);border-top:1px solid var(--navy)}
+.panel h4:first-child{border:0;padding-top:0}
+.roots{display:flex;flex-wrap:wrap;gap:10px;padding:8px 10px}
+.root{width:56px;height:56px;border-radius:50%;border:0;color:#fff;font:700 2.3rem var(--gothic);cursor:pointer;display:grid;place-items:center}
+.mods{display:flex;flex-wrap:wrap;gap:6px 12px;padding:8px 10px;align-items:center}
+.mods button{background:none;border:0;color:var(--navy);font:700 1.7rem var(--gothic);min-width:24px;cursor:pointer}
+.mods hr{width:0;height:30px;border:0;border-left:1px solid var(--navy);margin:0}
+.panel input[type=range]{width:100%;accent-color:var(--navy)}
+.small{display:flex;gap:8px;flex-wrap:wrap;padding:4px 10px 6px}
+.tool{background:none;border:1px solid var(--navy);color:var(--navy);border-radius:99px;font:700 .85rem var(--sans);padding:.2rem .8rem;cursor:pointer}
+.side{justify-self:end;display:grid;gap:16px;width:min(428px,100%)}
+.saves{display:flex;gap:16px;justify-content:flex-end}
+.saves .btn{font-size:1.6rem;border-radius:31px;padding:.4rem 1.1rem;min-width:0}
+.name{all:unset;box-sizing:border-box;width:100%;background:var(--red);color:#fff;font:700 1.3rem var(--sans);border-radius:22px;padding:.5rem .9rem}
+.name::placeholder{color:#fff;opacity:1}
+.selrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+/* view dialog */
+.modal{border:9px solid var(--navy);border-radius:30px;width:min(760px,92vw);padding:1.2rem}
+.modal::backdrop{background:rgba(45,50,146,.35)}
+.modal h2{margin:0;font:700 2rem var(--serif);color:var(--navy)}
+.modal .sub{margin:.2rem 0 1rem;font-weight:700;color:var(--slate)}
+.modal .row{padding:0 0 12px;flex-wrap:wrap;overflow:visible}.modal .pill{font-size:2.6rem}
+@media(max-width:860px){.dock{grid-template-columns:1fr}.side{justify-self:stretch}.grid{gap:28px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const API = '/api';
+const ROOT = { C: '#ec3d38', D: '#525d9b', E: '#eaa423', F: '#4ac8f6', G: '#c769a6', A: '#649a6a', B: '#ea3c94' };
+const KEYS = ['C','C#','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const TIMES = ['4/4','3/4','2/4','6/8','5/4','7/8','12/8'];
+const GENRES = ['Jazz','R&B','Pop','Rock','Blues','Soul','Hip-Hop','Folk','Gospel','Classical','Other'];
+const MODS = ['M','m','#','b','|','2','4','5','7','9','/','|','add','sus','|','ø','+'];
+const $app = document.getElementById('app');
+
+let session = null;
+try { session = JSON.parse(localStorage.getItem('cb')); } catch {}
+function setSession(s) {
+  session = s;
+  try { s ? localStorage.setItem('cb', JSON.stringify(s)) : localStorage.removeItem('cb'); } catch {}
+}
+
+// tiny DOM helper: text goes in as text, never as HTML
+const h = (tag, props = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'style') n.style.cssText = v; else if (k in n) n[k] = v; else n.setAttribute(k, v);
+  }
+  n.append(...kids.flat().filter((x) => x != null && x !== false));
+  return n;
+};
+
+async function api(path, opt = {}) {
+  const res = await fetch(API + path, {
+    method: opt.method,
+    headers: { 'Content-Type': 'application/json', ...(session && { Authorization: 'Bearer ' + session.token }) },
+    body: opt.body && JSON.stringify(opt.body)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && session) { setSession(null); location.hash = '#/account'; }
+  if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.');
+  return data;
+}
+
+/* ---------- shared pieces ---------- */
+const logo = () => { const s = h('a', { className: 'logo', href: '#/', 'aria-label': 'ChordBook home' });
+  s.innerHTML = '<svg viewBox="0 0 27 27" aria-hidden="true"><path d="M13.5 13.5V0A13.5 13.5 0 1 1 0 13.5Z"/></svg>'; return s; };
+const rule = () => h('div', { className: 'rule' });
+function shell(active, ...content) {
+  const link = (t, href, id) => h('a', { href, textContent: t, ...(active === id && { 'aria-current': 'page' }) });
+  $app.replaceChildren(h('header', { className: 'top' }, logo(), h('nav', {}, link('Discover', '#/discover', 'discover'), link('My Songs', '#/my-songs', 'my-songs'))), rule(), ...content);
+}
+const head = (title, sub, count) => h('section', { className: 'head' }, h('h1', { textContent: title }), h('p', { textContent: sub }), count);
+const plural = (n) => `${n} ${n === 1 ? 'Song' : 'Songs'}`;
+const empty = (t) => h('div', { className: 'empty', textContent: t });
+const pill = (sym) => h('span', { className: 'pill', style: `background:${ROOT[sym[0]] || '#2d3292'}` }, sym[0], h('small', { textContent: sym.slice(1) }));
+const rowOf = (chords) => h('div', { className: 'row' }, ...chords.flatMap((c, i) => [pill(c.symbol),
+  i < chords.length - 1 && h('span', { className: 'gap' + (c.beats < 2 ? ' join' : ''), style: '--b:' + c.beats })]));
+const pillSel = (label, cls, opts, val, on, blank) => h('select', { className: 'pillsel ' + cls, 'aria-label': label, onchange: (e) => on(e.target.value) },
+  ...(blank ? [h('option', { value: '', textContent: label })] : []), ...opts.map((o) => h('option', { value: o, textContent: o, selected: o === val })));
+function searchBox(on) {
+  let t; const box = h('label', { className: 'search' }, h('input', { type: 'search', placeholder: 'Search', 'aria-label': 'Search titles', oninput: (e) => { clearTimeout(t); t = setTimeout(() => on(e.target.value), 250); } }));
+  box.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="2.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M13 13l6 6"/></svg>');
+  return box;
+}
+
+function card(s) {
+  return h('article', { className: 'card' },
+    h('div', { className: 'ct' }, h('h3', { textContent: s.title }), h('button', { className: 'view', textContent: 'View', onclick: () => openSong(s) })),
+    rowOf(s.lines[0]?.chords || []),
+    h('div', { className: 'foot' }, h('span', { textContent: 'By: ' + s.ownerName }),
+      h('span', { className: 'meta' }, s.status === 'draft' && h('em', { textContent: 'Draft' }), h('b', { className: 'g', textContent: s.genre || '' }),
+        h('b', { className: 't', textContent: s.timeSignature }), h('i', { className: 'k', style: `background:${ROOT[s.key[0]]}`, textContent: s.key }))));
+}
+
+function openSong(s) {
+  const mine = session && session.user.id === s.owner;
+  const d = h('dialog', { className: 'modal', onclose: () => d.remove() },
+    h('h2', { textContent: s.title }),
+    h('p', { className: 'sub', textContent: `${s.key} · ${s.timeSignature} · ${s.genre || 'No genre'} · by ${s.ownerName}` }),
+    ...s.lines.map((l) => rowOf(l.chords)),
+    h('div', { className: 'btns' },
+      mine && h('button', { className: 'btn amber', textContent: 'Edit', onclick: () => { d.close(); location.hash = '#/edit/' + s._id; } }),
+      mine && h('button', { className: 'btn pink', textContent: 'Delete', onclick: async () => {
+        if (!confirm(`Delete “${s.title}”? This can’t be undone.`)) return;
+        await api('/songs/' + s._id, { method: 'DELETE' }); d.close(); route(); } }),
+      h('button', { className: 'btn', textContent: 'Close', onclick: () => d.close() })));
+  document.body.append(d); d.showModal();
+}
+
+/* ---------- screens ---------- */
+async function home() {
+  const songs = await api('/songs?scope=discover&limit=4');
+  shell('', h('section', { className: 'hero' }, h('h1', {}, 'Chord', h('span', { textContent: 'Book' })),
+    h('p', { textContent: 'Create, save, and share chord progressions for others to discover your sound.' }),
+    h('div', { className: 'btns' }, h('a', { className: 'btn', href: '#/create', textContent: 'Create' }), h('a', { className: 'btn amber', href: '#/discover', textContent: 'Discover' }))),
+    rule(), h('div', { className: 'grid' }, ...(songs.length ? songs.map(card) : [empty('No songs shared yet. Be the first to create one.')])));
+}
+
+async function discover() {
+  const f = { q: '', key: '', timeSignature: '', genre: '' };
+  const list = h('div', { className: 'grid' }), count = h('span', { className: 'count' }), legend = h('p', { className: 'legend' });
+  const load = async () => {
+    const p = new URLSearchParams({ scope: 'discover', ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)) });
+    const songs = await api('/songs?' + p);
+    count.textContent = plural(songs.length);
+    list.replaceChildren(...(songs.length ? songs.map(card) : [empty('No songs match those filters.')]));
+    legend.replaceChildren(h('span', { style: 'color:var(--red)', textContent: f.q ? `“${f.q}”` : 'Search Result' }), h('span', { style: 'color:var(--amber)', textContent: f.key || 'Key' }),
+      h('span', { style: 'color:var(--slate)', textContent: f.timeSignature || 'Time Signature' }), h('span', { style: 'color:var(--green)', textContent: f.genre || 'Genre' }));
+  };
+  const set = (k) => (v) => { f[k] = v; load().catch(() => {}); };
+  shell('discover', head('Discover', 'Progressions shared by the community.', count), rule(),
+    h('div', { className: 'filters' }, searchBox(set('q')), h('div', { className: 'sels' },
+      pillSel('Key', 'amber', KEYS, '', set('key'), true), pillSel('Time Signature', 'slate', TIMES, '', set('timeSignature'), true), pillSel('Genre', 'green', GENRES, '', set('genre'), true))),
+    legend, list);
+  await load();
+}
+
+async function mySongs() {
+  if (!session) { location.hash = '#/account'; return; }
+  const songs = await api('/songs?scope=mine');
+  const list = h('div', { className: 'grid' });
+  const draw = (t = '') => {
+    const v = songs.filter((s) => s.title.toLowerCase().includes(t.toLowerCase()));
+    list.replaceChildren(...(v.length ? v.map(card) : [empty(songs.length ? 'No matches.' : 'You haven’t saved any progressions yet. Tap + to make one.')]));
+  };
+  shell('my-songs', head(session.user.username, 'Your progressions. Drafts are only visible to you.', h('span', { className: 'count', textContent: plural(songs.length) })), rule(),
+    h('div', { className: 'tools' }, searchBox(draw), h('a', { className: 'plus', href: '#/create', textContent: '+', 'aria-label': 'Create a progression' }),
+      h('button', { className: 'link', textContent: 'Log out', onclick: () => { setSession(null); location.hash = '#/'; } })), list);
+  draw();
+}
+
+function account() {
+  if (session) { location.hash = '#/my-songs'; return; }
+  let mode = 'signup';
+  const title = h('h1'), sub = h('p'), err = h('p', { className: 'msg', role: 'alert' });
+  const up = h('button', { className: 'btn', textContent: 'Sign Up', onclick: () => { mode = 'signup'; draw(); } });
+  const inn = h('button', { className: 'btn amber', textContent: 'Log In', onclick: () => { mode = 'login'; draw(); } });
+  const user = h('input', { name: 'username', placeholder: 'Username', autocomplete: 'username', 'aria-label': 'Username' });
+  const mail = h('input', { name: 'email', type: 'email', placeholder: 'Email', autocomplete: 'email', 'aria-label': 'Email' });
+  const pass = h('input', { name: 'password', type: 'password', placeholder: 'Password (8+ characters)', 'aria-label': 'Password' });
+  const go = h('button', { className: 'btn', type: 'submit' });
+  const draw = () => {
+    const s = mode === 'signup';
+    title.textContent = s ? 'Create Account' : 'Log In';
+    sub.textContent = s ? 'Create your account and share your creativity' : 'Welcome back. Pick up where you left off.';
+    up.setAttribute('aria-pressed', s); inn.setAttribute('aria-pressed', !s);
+    user.hidden = !s; pass.autocomplete = s ? 'new-password' : 'current-password'; go.textContent = s ? 'Create account' : 'Log in'; err.textContent = '';
+  };
+  const form = h('form', { className: 'auth', onsubmit: async (e) => {
+    e.preventDefault(); err.textContent = '';
+    try {
+      const body = mode === 'signup' ? { username: user.value, email: mail.value, password: pass.value } : { email: mail.value, password: pass.value };
+      setSession(await api('/auth/' + (mode === 'signup' ? 'register' : 'login'), { method: 'POST', body }));
+      location.hash = '#/my-songs';
+    } catch (ex) { err.textContent = ex.message; }
+  } }, user, mail, pass, go, err);
+  shell('my-songs', h('section', { className: 'hero' }, title, sub, h('div', { className: 'btns' }, up, inn)), form);
+  title.style.fontSize = 'clamp(2.4rem,8vw,6rem)'; draw();
+}
+
+async function editor(id) {
+  if (!session) { location.hash = '#/account'; return; }
+  const song = id ? await api('/songs/' + id) : null;
+  if (song && song.owner !== session.user.id) { location.hash = '#/my-songs'; return; }
+  const m = { title: song?.title || '', key: song?.key || 'C', timeSignature: song?.timeSignature || '4/4', genre: song?.genre || '' };
+  const lines = song ? song.lines.map((l) => l.chords.map((c) => ({ ...c }))) : [[]];
+  let sel = null, beats = 2;
+  const canvas = h('div', { className: 'canvas' }), err = h('p', { className: 'msg', role: 'alert' }), readout = h('span');
+  const slider = h('input', { type: 'range', min: 1, max: 8, value: beats, 'aria-label': 'Spacing after the selected chord', oninput: (e) => {
+    beats = +e.target.value; readout.textContent = beats + (beats === 1 ? ' beat' : ' beats');
+    if (sel) { lines[sel.l][sel.i].beats = beats; draw(); } } });
+  readout.textContent = beats + ' beats';
+  const conn = (b) => h('span', { className: 'conn', style: '--b:' + b }, ...Array.from({ length: b }, () => h('i')));
+  function draw() {
+    canvas.replaceChildren(...lines.map((ch, l) => h('div', { className: 'band' }, ...ch.flatMap((c, i) => [
+      h('button', { type: 'button', className: 'chip', 'aria-label': 'Chord ' + c.symbol, 'aria-pressed': String(sel?.l === l && sel?.i === i),
+        onclick: () => { sel = { l, i }; beats = c.beats; slider.value = beats; readout.textContent = beats + ' beats'; draw(); } }, pill(c.symbol)),
+      conn(c.beats)]), ch.length === 0 && h('span', { className: 'hint', textContent: 'Pick a chord below to start' }))));
+  }
+  const add = (r) => { const l = lines.length - 1; lines[l].push({ symbol: r, beats }); sel = { l, i: lines[l].length - 1 }; draw(); };
+  const mod = (t) => { const c = sel && lines[sel.l][sel.i]; if (c && c.symbol.length < 20) { c.symbol += t; draw(); } };
+  const del = () => {
+    if (!sel) return; lines[sel.l].splice(sel.i, 1);
+    if (!lines[sel.l].length && lines.length > 1) lines.splice(sel.l, 1);
+    const l = lines.length - 1; sel = lines[l].length ? { l, i: lines[l].length - 1 } : null; draw();
+  };
+  async function save(status) {
+    err.textContent = '';
+    try {
+      await api(id ? '/songs/' + id : '/songs', { method: id ? 'PUT' : 'POST', body: { ...m, status, lines: lines.filter((l) => l.length).map((chords) => ({ chords })) } });
+      location.hash = '#/my-songs';
+    } catch (ex) { err.textContent = ex.message; }
+  }
+  const palette = h('div', { className: 'panel' },
+    h('h4', { textContent: 'Chords' }), h('div', { className: 'roots' }, ...Object.keys(ROOT).map((r) => h('button', { type: 'button', className: 'root', style: `background:${ROOT[r]}`, textContent: r, 'aria-label': 'Add ' + r, onclick: () => add(r) }))),
+    h('h4', { textContent: 'Modifiers (applied to the selected chord)' }), h('div', { className: 'mods' }, ...MODS.map((t) => t === '|' ? h('hr') : h('button', { type: 'button', textContent: t, onclick: () => mod(t) }))),
+    h('h4', {}, 'Spacing: ', readout), slider,
+    h('div', { className: 'small' }, h('button', { type: 'button', className: 'tool', textContent: 'Delete chord', onclick: del }),
+      h('button', { type: 'button', className: 'tool', textContent: '+ New line', onclick: () => { lines.push([]); sel = null; draw(); } })));
+  const side = h('div', { className: 'side' },
+    h('div', { className: 'saves' }, h('button', { className: 'btn pink', textContent: 'Save as Draft', onclick: () => save('draft') }), h('button', { className: 'btn', textContent: 'Save', onclick: () => save('published') })),
+    h('div', { className: 'panel' }, h('input', { className: 'name', placeholder: 'Name', 'aria-label': 'Song name', maxLength: 100, value: m.title, oninput: (e) => (m.title = e.target.value) }),
+      h('div', { className: 'selrow' }, pillSel('Key', 'amber', KEYS, m.key, (v) => (m.key = v)), pillSel('Time Signature', 'slate', TIMES, m.timeSignature, (v) => (m.timeSignature = v)), pillSel('Genre', 'green', GENRES, m.genre, (v) => (m.genre = v), true))),
+    err);
+  shell('', h('main', {}, canvas, h('div', { className: 'dock' }, palette, side)));
+  draw();
+}
+
+/* ---------- router ---------- */
+const routes = { '': home, discover, 'my-songs': mySongs, account, create: () => editor(), edit: editor };
+async function route() {
+  const [p, id] = location.hash.replace(/^#\/?/, '').split('/');
+  document.body.classList.toggle('dots', p === 'create' || p === 'edit');
+  document.querySelectorAll('dialog').forEach((d) => d.remove());
+  try { await (routes[p] || home)(id); }
+  catch (e) { shell('', h('p', { className: 'msg', textContent: e.message })); }
+}
+addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
