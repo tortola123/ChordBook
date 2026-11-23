@@ -57,7 +57,7 @@ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .view{background:var(--navy);color:#fff;border:0;border-radius:34px;font:700 1.4rem var(--sans);padding:.3rem .8rem;cursor:pointer}
 .row{display:flex;align-items:center;padding:0 26px 14px;overflow:hidden}
 .card .pill{font-size:clamp(1.7rem,3.2vw,3.1rem)}
-.pill{display:inline-flex;align-items:flex-end;justify-content:center;flex:none;color:#fff;font:700 3.2rem/1 var(--gothic);padding:.22em .3em .16em;border-radius:99px;min-width:1.9em}
+.pill{display:inline-flex;align-items:center;justify-content:center;flex:none;color:#fff;font:700 3.2rem/1 var(--gothic);padding:.2em .3em;border-radius:99px;min-width:1.9em}
 .pill small{font-size:.78em}
 .gap{flex:var(--b) 1 6px;min-width:6px}
 .gap.join{flex:0 0 18px;height:6px;background:var(--ink)}
@@ -71,8 +71,8 @@ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .auth{display:grid;gap:.7rem;max-width:420px;margin:1.6rem auto}
 .auth input{border:3px solid var(--navy);border-radius:16px;padding:.6rem 1rem;font:inherit;width:100%}
 /* builder */
-.canvas{display:grid;gap:26px;justify-items:center;min-height:300px;padding:40px 0}
-.band{display:flex;align-items:center;flex-wrap:wrap;min-width:60%;max-width:100%;border:1px solid var(--red);border-radius:38px;padding:22px 30px;background:#fff}
+.canvas{display:grid;gap:26px;justify-items:stretch;align-content:center;min-height:max(340px,calc(100vh - 470px));padding:20px 0}
+.band{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;min-height:110px;padding:10px 20px;border-radius:38px}
 .band .hint{color:var(--slate);font-weight:700;margin:0 auto}
 .chip{background:none;border:0;padding:4px;border-radius:99px;cursor:pointer;display:inline-flex}
 .chip[aria-pressed=true]{outline:3px solid var(--navy);outline-offset:2px}
@@ -99,13 +99,13 @@ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 .name::placeholder{color:#fff;opacity:1}
 .selrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .chip[draggable=true],.root,.mods button{cursor:grab}
-.chip.over{outline:3px dashed var(--red);outline-offset:2px}.band.over{background:#fff3f2}.conn.over{outline:2px dashed var(--red);outline-offset:4px}.panel.over{outline:4px dashed var(--red);outline-offset:2px}
+.chip.over{outline:3px dashed var(--red);outline-offset:2px}.band.over{outline:3px dashed var(--red);outline-offset:-3px}.conn.over{outline:2px dashed var(--red);outline-offset:4px}.panel.over{outline:4px dashed var(--red);outline-offset:2px}
 /* view dialog */
 .modal{border:9px solid var(--navy);border-radius:30px;width:min(760px,92vw);padding:1.2rem}
 .modal::backdrop{background:rgba(45,50,146,.35)}
 .modal h2{margin:0;font:700 2rem var(--serif);color:var(--navy)}
 .modal .sub{margin:.2rem 0 1rem;font-weight:700;color:var(--slate)}
-.modal .row{padding:0 0 12px;flex-wrap:wrap;overflow:visible}.modal .pill{font-size:2.6rem}
+.modal .row{padding:0 0 12px;flex-wrap:wrap;overflow:visible;row-gap:12px}.modal .pill{font-size:2.6rem}
 @media(max-width:860px){.dock{grid-template-columns:1fr}.side{justify-self:stretch}.grid{gap:28px}}
 </style>
 </head>
@@ -161,8 +161,9 @@ const head = (title, sub, count) => h('section', { className: 'head' }, h('h1', 
 const plural = (n) => `${n} ${n === 1 ? 'Song' : 'Songs'}`;
 const empty = (t) => h('div', { className: 'empty', textContent: t });
 const pill = (sym) => h('span', { className: 'pill', style: `background:${ROOT[sym[0]] || '#2d3292'}` }, sym[0], h('small', { textContent: sym.slice(1) }));
-const rowOf = (chords) => h('div', { className: 'row' }, ...chords.flatMap((c, i) => [pill(c.symbol),
-  i < chords.length - 1 && h('span', { className: 'gap' + (c.beats < 2 ? ' join' : ''), style: '--b:' + c.beats })]));
+const rowOf = (chords, showBeats) => h('div', { className: 'row' }, ...chords.flatMap((c, i) => showBeats
+  ? [pill(c.symbol), h('span', { className: 'conn', style: '--b:' + c.beats, title: c.beats + (c.beats === 1 ? ' beat' : ' beats') }, ...Array.from({ length: c.beats }, () => h('i')))]
+  : [pill(c.symbol), i < chords.length - 1 && h('span', { className: 'gap' + (c.beats < 2 ? ' join' : ''), style: '--b:' + c.beats })]));
 const pillSel = (label, cls, opts, val, on, blank) => h('select', { className: 'pillsel ' + cls, 'aria-label': label, onchange: (e) => on(e.target.value) },
   ...(blank ? [h('option', { value: '', textContent: label })] : []), ...opts.map((o) => h('option', { value: o, textContent: o, selected: o === val })));
 function searchBox(on) {
@@ -185,7 +186,7 @@ function openSong(s) {
   const d = h('dialog', { className: 'modal', onclose: () => d.remove() },
     h('h2', { textContent: s.title }),
     h('p', { className: 'sub', textContent: `${s.key} · ${s.timeSignature} · ${s.genre || 'No genre'} · by ${s.ownerName}` }),
-    ...s.lines.map((l) => rowOf(l.chords)),
+    ...s.lines.map((l) => rowOf(l.chords, true)),
     h('div', { className: 'btns' },
       mine && h('button', { className: 'btn amber', textContent: 'Edit', onclick: () => { d.close(); location.hash = '#/edit/' + s._id; } }),
       mine && h('button', { className: 'btn pink', textContent: 'Delete', onclick: async () => {
