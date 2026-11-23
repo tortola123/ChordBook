@@ -2,8 +2,8 @@
   "name": "chordbook",
   "version": "2.0.0",
   "description": "ChordBook: create, save and share chord progressions (Express + MongoDB)",
-  "main": "server.js",
-  "scripts": { "start": "node server.js", "dev": "node --watch server.js" },
+  "main": "local.js",
+  "scripts": { "start": "node local.js", "dev": "node --watch local.js" },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
