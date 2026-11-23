@@ -117,7 +117,8 @@ const ROOT = { C: '#ec3d38', D: '#525d9b', E: '#eaa423', F: '#4ac8f6', G: '#c769
 const KEYS = ['C','C#','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const TIMES = ['4/4','3/4','2/4','6/8','5/4','7/8','12/8'];
 const GENRES = ['Jazz','R&B','Pop','Rock','Blues','Soul','Hip-Hop','Folk','Gospel','Classical','Other'];
-const MODS = ['M','m','#','b','|','2','4','5','7','9','/','|','add','sus','|','ø','+'];
+const MODS = ['M','m','#','b','|','2','4','5','7','9','/','|','add','sus','|','ø','+','|','C','D','E','F','G','A','B'];
+const isNote = (t) => /^[A-G]$/.test(t);
 const $app = document.getElementById('app');
 
 let session = null;
@@ -160,7 +161,10 @@ function shell(active, ...content) {
 const head = (title, sub, count) => h('section', { className: 'head' }, h('h1', { textContent: title }), h('p', { textContent: sub }), count);
 const plural = (n) => `${n} ${n === 1 ? 'Song' : 'Songs'}`;
 const empty = (t) => h('div', { className: 'empty', textContent: t });
-const pill = (sym) => h('span', { className: 'pill', style: `background:${ROOT[sym[0]] || '#2d3292'}` }, sym[0], h('small', { textContent: sym.slice(1) }));
+const pill = (sym) => {
+  const i = sym.indexOf('/'), mid = i < 0 ? sym.slice(1) : sym.slice(1, i), bass = i < 0 ? '' : sym.slice(i);
+  return h('span', { className: 'pill', style: `background:${ROOT[sym[0]] || '#2d3292'}` }, sym[0], mid && h('small', { textContent: mid }), bass && h('span', { textContent: bass }));
+};
 const rowOf = (chords, showBeats) => h('div', { className: 'row' }, ...chords.flatMap((c, i) => showBeats
   ? [pill(c.symbol), h('span', { className: 'conn', style: '--b:' + c.beats, title: c.beats + (c.beats === 1 ? ' beat' : ' beats') }, ...Array.from({ length: c.beats }, () => h('i')))]
   : [pill(c.symbol), i < chords.length - 1 && h('span', { className: 'gap' + (c.beats < 2 ? ' join' : ''), style: '--b:' + c.beats })]));
@@ -289,13 +293,26 @@ async function editor(id) {
     ondrop: (e) => { if (!ok()) return; e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('over'); fn(e); }
   });
   // l = line, at = index to insert at (undefined = end of line), target = chord a modifier lands on
+  function bassOn(c, v) {
+    if (!c || c.symbol.length > 17) return false;
+    if (c.symbol.endsWith('/')) c.symbol += v; else if (!c.symbol.includes('/')) c.symbol += '/' + v; else return false;
+    return true;
+  }
   function drop(l, at, target) {
     const d = drag; drag = null; if (!d) return;
     const line = lines[l];
-    if (d.t === 'root') { const k = at ?? line.length; line.splice(k, 0, { symbol: d.v, beats }); sel = { l, i: k }; }
+    if (d.t === 'root') {
+      // after a "/", a dropped note becomes the bass note (inversion, e.g. C/E) instead of a new chord
+      const k0 = target ?? line.length - 1, t = line[k0];
+      if (t && t.symbol.endsWith('/')) { t.symbol += d.v; sel = { l, i: k0 }; }
+      else { const k = at ?? line.length; line.splice(k, 0, { symbol: d.v, beats }); sel = { l, i: k }; }
+    }
     else if (d.t === 'mod') {
       const k = target ?? line.length - 1, c = line[k];
-      if (c && c.symbol.length < 20) { c.symbol += d.v; sel = { l, i: k }; }
+      if (c && c.symbol.length < 20 && !(d.v === '/' && c.symbol.includes('/'))) { c.symbol += d.v; sel = { l, i: k }; }
+    } else if (d.t === 'bass') {
+      const k = target ?? line.length - 1;
+      if (bassOn(line[k], d.v)) sel = { l, i: k };
     } else if (d.t === 'chord') {
       const [c] = lines[d.l].splice(d.i, 1);
       let k = at ?? line.length;
@@ -319,8 +336,9 @@ async function editor(id) {
         ...over((e) => { const r = e.currentTarget.getBoundingClientRect(); drop(l, e.clientX > r.left + r.width / 2 ? i + 1 : i, i); }) }, pill(c.symbol)),
       conn(c.beats, l, i)]), ch.length === 0 && h('span', { className: 'hint', textContent: 'Drag a chord here, or click one below' }))));
   }
-  const add = (r) => { const l = lines.length - 1; lines[l].push({ symbol: r, beats }); sel = { l, i: lines[l].length - 1 }; draw(); };
-  const mod = (t) => { const c = sel && lines[sel.l][sel.i]; if (c && c.symbol.length < 20) { c.symbol += t; draw(); } };
+  const add = (r) => { const cur = sel && lines[sel.l][sel.i]; if (cur && cur.symbol.endsWith('/')) { cur.symbol += r; draw(); return; } const l = lines.length - 1; lines[l].push({ symbol: r, beats }); sel = { l, i: lines[l].length - 1 }; draw(); };
+  const bass = (t) => { const c = sel && lines[sel.l][sel.i]; if (bassOn(c, t)) draw(); };
+  const mod = (t) => { const c = sel && lines[sel.l][sel.i]; if (c && c.symbol.length < 20 && !(t === '/' && c.symbol.includes('/'))) { c.symbol += t; draw(); } };
   const del = () => {
     if (!sel) return; lines[sel.l].splice(sel.i, 1);
     if (!lines[sel.l].length && lines.length > 1) lines.splice(sel.l, 1);
@@ -334,8 +352,8 @@ async function editor(id) {
     } catch (ex) { err.textContent = ex.message; }
   }
   const palette = h('div', { className: 'panel', ...over(dropOut, () => drag?.t === 'chord') },
-    h('h4', { textContent: 'Chords (drag onto the progression, or click)' }), h('div', { className: 'roots' }, ...Object.keys(ROOT).map((r) => h('button', { type: 'button', className: 'root', style: `background:${ROOT[r]}`, textContent: r, 'aria-label': 'Add ' + r, onclick: () => add(r), draggable: true, ondragstart: startDrag({ t: 'root', v: r }), ondragend: () => (drag = null) }))),
-    h('h4', { textContent: 'Modifiers (drag onto a chord, or click to use the selected one)' }), h('div', { className: 'mods' }, ...MODS.map((t) => t === '|' ? h('hr') : h('button', { type: 'button', textContent: t, onclick: () => mod(t), draggable: true, ondragstart: startDrag({ t: 'mod', v: t }), ondragend: () => (drag = null) }))),
+    h('h4', { textContent: 'Chords' }), h('div', { className: 'roots' }, ...Object.keys(ROOT).map((r) => h('button', { type: 'button', className: 'root', style: `background:${ROOT[r]}`, textContent: r, 'aria-label': 'Add ' + r, onclick: () => add(r), draggable: true, ondragstart: startDrag({ t: 'root', v: r }), ondragend: () => (drag = null) }))),
+    h('h4', { textContent: 'Modifiers' }), h('div', { className: 'mods' }, ...MODS.map((t) => t === '|' ? h('hr') : h('button', { type: 'button', textContent: t, title: isNote(t) ? 'Bass note: drag onto a chord to make an inversion' : '', onclick: () => (isNote(t) ? bass(t) : mod(t)), draggable: true, ondragstart: startDrag({ t: isNote(t) ? 'bass' : 'mod', v: t }), ondragend: () => (drag = null) }))),
     h('h4', {}, 'Spacing: ', readout), slider,
     h('div', { className: 'small' }, h('button', { type: 'button', className: 'tool', textContent: 'Delete chord', title: 'You can also drag a chord back onto this panel', onclick: del }),
       h('button', { type: 'button', className: 'tool', textContent: '+ New line', onclick: () => { lines.push([]); sel = null; draw(); } })));
